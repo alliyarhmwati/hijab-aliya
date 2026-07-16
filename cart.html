@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Keranjang — AR Pashmina</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container bar">
+    <a href="index.html" class="brand">AR <small>Pashmina Studio</small></a>
+    <nav class="nav-links">
+      <a href="index.html">Beranda</a>
+      <a href="shop.html">Belanja</a>
+      <a href="shop.html?cat=Polos">Polos</a>
+      <a href="shop.html?cat=Motif">Motif</a>
+    </nav>
+    <div class="header-actions">
+      <button class="nav-toggle icon-btn" aria-label="Buka menu">☰</button>
+      <a href="#" class="icon-btn" data-account-btn aria-label="Masuk">👤</a>
+      <a href="cart.html" class="icon-btn" aria-label="Keranjang">
+        🛍️
+        <span class="cart-count" data-cart-count style="display:none">0</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <p class="crumb"><a href="index.html">Beranda</a><span>/</span>Keranjang</p>
+</div>
+
+<div class="container">
+  <h1 style="font-size:1.9rem;margin-top:14px;">Keranjang Belanja</h1>
+  <div id="cart-wrap"></div>
+</div>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div>
+      <a href="index.html" class="brand" style="color:var(--ivory)">AR <small>Pashmina Studio</small></a>
+      <p style="margin-top:14px;max-width:280px;color:rgba(247,241,232,.65);font-size:.88rem;">Pashmina viscose premium untuk perempuan Indonesia yang ingin tampil tenang dan nyaman setiap hari.</p>
+    </div>
+    <div>
+      <h5>Belanja</h5>
+      <a href="shop.html">Semua Produk</a>
+      <a href="shop.html?cat=Polos">Pashmina Polos</a>
+      <a href="shop.html?cat=Motif">Pashmina Motif</a>
+      <a href="cart.html">Keranjang</a>
+    </div>
+    <div>
+      <h5>Bantuan</h5>
+      <a href="#">Cara Pemesanan</a>
+      <a href="#">Pengiriman</a>
+      <a href="#">Kebijakan Retur</a>
+      <a href="admin/login.html">Admin Panel</a>
+    </div>
+    <div>
+      <h5>Hubungi Kami</h5>
+      <a href="#">WhatsApp: 0812-3456-7890</a>
+      <a href="#">hello@arpashmina.id</a>
+      <a href="#">Instagram @ar.pashmina</a>
+    </div>
+  </div>
+  <div class="container footer-bottom">
+    <span>© 2026 AR Pashmina Studio. Semua produk dibuat dengan cinta.</span>
+    <span>Situs demo — pembayaran bersifat simulasi.</span>
+  </div>
+</footer>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/ui.js"></script>
+<script>
+  const wrap = document.getElementById('cart-wrap');
+
+  function render(){
+    const items = arCartDetailed();
+
+    if(items.length === 0){
+      wrap.innerHTML = `
+        <div class="empty-state">
+          <div class="ic">🛍️</div>
+          <h3>Keranjang kamu masih kosong</h3>
+          <p>Yuk pilih pashmina favoritmu dulu.</p>
+          <a href="shop.html" class="btn btn-primary">Mulai Belanja</a>
+        </div>`;
+      return;
+    }
+
+    const subtotal = arCartSubtotal();
+    const shippingFee = subtotal > 0 ? 12000 : 0;
+    const total = subtotal + shippingFee;
+
+    wrap.innerHTML = `
+      <div class="cart-layout">
+        <div>
+          ${items.map(i => `
+            <div class="cart-item" data-id="${i.productId}">
+              <img src="${arProductImg(i.product)}" alt="${i.product.name}" onerror="this.onerror=null;this.src='${arPlaceholderImg(i.product.hex, i.product.color)}'">
+              <div>
+                <h4>${i.product.name}</h4>
+                <div class="meta">Warna: ${i.product.color} · ${arFormatIDR(i.product.price)} / pcs</div>
+                <a class="remove" data-action="remove" data-id="${i.productId}">Hapus</a>
+              </div>
+              <div class="qty-stepper">
+                <button type="button" data-action="minus" data-id="${i.productId}">−</button>
+                <input type="text" value="${i.qty}" readonly>
+                <button type="button" data-action="plus" data-id="${i.productId}">+</button>
+              </div>
+              <div class="line-total">${arFormatIDR(i.lineTotal)}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="summary-card">
+          <h3>Ringkasan Belanja</h3>
+          <div class="summary-row"><span>Subtotal</span><span>${arFormatIDR(subtotal)}</span></div>
+          <div class="summary-row"><span>Ongkos Kirim</span><span>${arFormatIDR(shippingFee)}</span></div>
+          <div class="summary-row total"><span>Total</span><span>${arFormatIDR(total)}</span></div>
+          <button type="button" id="checkout-btn" class="btn btn-primary btn-block" style="margin-top:16px;">Lanjut ke Checkout</button>
+          ${arIsUserLoggedIn() ? '' : '<p style="font-size:.78rem;color:#8a8073;text-align:center;margin-top:8px;">Masuk atau daftar dulu untuk lanjut checkout.</p>'}
+          <a href="shop.html" class="btn btn-outline btn-block" style="margin-top:10px;">Tambah Produk Lain</a>
+        </div>
+      </div>
+    `;
+  }
+
+  wrap.addEventListener('click', (e) => {
+    if(e.target.closest('#checkout-btn')){
+      if(arIsUserLoggedIn()){
+        location.href = 'checkout.html';
+      } else {
+        arToast('Silakan masuk atau daftar dulu untuk checkout.');
+        location.href = 'login.html?redirect=checkout.html';
+      }
+      return;
+    }
+    const btn = e.target.closest('[data-action]');
+    if(!btn) return;
+    const id = btn.dataset.id;
+    const action = btn.dataset.action;
+    const current = arGetCart().find(i => i.productId === id);
+    const product = arGetProduct(id);
+    if(action === 'remove'){
+      arRemoveFromCart(id);
+    } else if(action === 'plus' && current){
+      const max = product ? product.stock : 99;
+      arUpdateCartQty(id, Math.min(max, current.qty + 1));
+    } else if(action === 'minus' && current){
+      arUpdateCartQty(id, current.qty - 1);
+    }
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>
