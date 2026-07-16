@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Belanja Pashmina — AR</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container bar">
+    <a href="index.html" class="brand">AR <small>Pashmina Studio</small></a>
+    <nav class="nav-links">
+      <a href="index.html">Beranda</a>
+      <a href="shop.html" class="active">Belanja</a>
+      <a href="shop.html?cat=Polos">Polos</a>
+      <a href="shop.html?cat=Motif">Motif</a>
+    </nav>
+    <div class="header-actions">
+      <button class="nav-toggle icon-btn" aria-label="Buka menu">☰</button>
+      <a href="#" class="icon-btn" data-account-btn aria-label="Masuk">👤</a>
+      <a href="cart.html" class="icon-btn" aria-label="Keranjang">
+        🛍️
+        <span class="cart-count" data-cart-count style="display:none">0</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <p class="crumb"><a href="index.html">Beranda</a><span>/</span>Belanja</p>
+</div>
+
+<section class="section tight">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Koleksi Lengkap</p>
+        <h2>Semua Pashmina AR</h2>
+      </div>
+      <input id="search-input" type="search" placeholder="Cari warna atau nama produk…" style="padding:12px 18px;border-radius:999px;border:1px solid var(--line);min-width:260px;background:#fff;">
+    </div>
+
+    <div class="pill-row" id="pill-row">
+      <button class="pill" data-cat="all">Semua</button>
+      <button class="pill" data-cat="Polos">Polos</button>
+      <button class="pill" data-cat="Motif">Motif</button>
+    </div>
+
+    <div class="grid-products" id="product-grid"></div>
+    <p id="empty-msg" style="display:none;text-align:center;padding:60px 0;color:#8a8073;">Tidak ada produk yang cocok dengan pencarianmu.</p>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div>
+      <a href="index.html" class="brand" style="color:var(--ivory)">AR <small>Pashmina Studio</small></a>
+      <p style="margin-top:14px;max-width:280px;color:rgba(247,241,232,.65);font-size:.88rem;">Pashmina viscose premium untuk perempuan Indonesia yang ingin tampil tenang dan nyaman setiap hari.</p>
+    </div>
+    <div>
+      <h5>Belanja</h5>
+      <a href="shop.html">Semua Produk</a>
+      <a href="shop.html?cat=Polos">Pashmina Polos</a>
+      <a href="shop.html?cat=Motif">Pashmina Motif</a>
+      <a href="cart.html">Keranjang</a>
+    </div>
+    <div>
+      <h5>Bantuan</h5>
+      <a href="#">Cara Pemesanan</a>
+      <a href="#">Pengiriman</a>
+      <a href="#">Kebijakan Retur</a>
+      <a href="admin/login.html">Admin Panel</a>
+    </div>
+    <div>
+      <h5>Hubungi Kami</h5>
+      <a href="#">WhatsApp: 0812-3456-7890</a>
+      <a href="#">hello@arpashmina.id</a>
+      <a href="#">Instagram @ar.pashmina</a>
+    </div>
+  </div>
+  <div class="container footer-bottom">
+    <span>© 2026 AR Pashmina Studio. Semua produk dibuat dengan cinta.</span>
+    <span>Situs demo — pembayaran bersifat simulasi.</span>
+  </div>
+</footer>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/ui.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+  let activeCat = params.get('cat') || 'all';
+  let query = '';
+
+  const grid = document.getElementById('product-grid');
+  const emptyMsg = document.getElementById('empty-msg');
+  const pillRow = document.getElementById('pill-row');
+  const searchInput = document.getElementById('search-input');
+
+  function syncPills(){
+    pillRow.querySelectorAll('.pill').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.cat === activeCat);
+    });
+  }
+
+  function render(){
+    const all = arGetProducts();
+    const filtered = all.filter(p => {
+      if(!p.image) return false; // hide products without a real photo yet
+      const catOk = activeCat === 'all' || p.category === activeCat;
+      const q = query.trim().toLowerCase();
+      const qOk = !q || p.name.toLowerCase().includes(q) || p.color.toLowerCase().includes(q);
+      return catOk && qOk;
+    });
+
+    grid.innerHTML = filtered.map(renderCard).join('');
+    emptyMsg.style.display = filtered.length ? 'none' : 'block';
+  }
+
+  function renderCard(p){
+    const img = arProductImg(p);
+    const imgFallback = arPlaceholderImg(p.hex, p.color);
+    const badge = p.stock === 0 ? '<span class="p-badge out">Habis</span>' : (p.oldPrice ? '<span class="p-badge">Diskon</span>' : '');
+    const priceHtml = p.oldPrice
+      ? `<span class="old">${arFormatIDR(p.oldPrice)}</span>${arFormatIDR(p.price)}`
+      : arFormatIDR(p.price);
+    return `
+      <a class="p-card" href="product.html?id=${p.id}">
+        <div class="p-thumb">
+          <img src="${img}" alt="${p.name}" loading="lazy" onerror="this.onerror=null;this.src='${imgFallback}'">
+          ${badge}
+          <span class="p-quick">→</span>
+        </div>
+        <div class="p-body">
+          <span class="p-cat">${p.category}</span>
+          <span class="p-name">${p.name}</span>
+          <span class="p-price">${priceHtml}</span>
+        </div>
+      </a>`;
+  }
+
+  pillRow.addEventListener('click', (e) => {
+    const btn = e.target.closest('.pill');
+    if(!btn) return;
+    activeCat = btn.dataset.cat;
+    syncPills();
+    render();
+  });
+
+  searchInput.addEventListener('input', (e) => {
+    query = e.target.value;
+    render();
+  });
+
+  syncPills();
+  render();
+</script>
+</body>
+</html>
