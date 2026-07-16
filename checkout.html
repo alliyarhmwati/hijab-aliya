@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout — AR Pashmina</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container bar">
+    <a href="index.html" class="brand">AR <small>Pashmina Studio</small></a>
+    <nav class="nav-links">
+      <a href="index.html">Beranda</a>
+      <a href="shop.html">Belanja</a>
+      <a href="shop.html?cat=Polos">Polos</a>
+      <a href="shop.html?cat=Motif">Motif</a>
+    </nav>
+    <div class="header-actions">
+      <a href="#" class="icon-btn" data-account-btn aria-label="Masuk">👤</a>
+      <a href="cart.html" class="icon-btn" aria-label="Keranjang">
+        🛍️
+        <span class="cart-count" data-cart-count style="display:none">0</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <p class="crumb"><a href="index.html">Beranda</a><span>/</span><a href="cart.html">Keranjang</a><span>/</span>Checkout</p>
+</div>
+
+<div class="container" id="checkout-wrap">
+  <h1 style="font-size:1.9rem;margin-top:14px;">Checkout</h1>
+</div>
+
+<footer class="site-footer">
+  <div class="container footer-bottom" style="border-top:1px solid rgba(247,241,232,.12)">
+    <span>© 2026 AR Pashmina Studio.</span>
+    <span>Situs demo — pembayaran bersifat simulasi, tidak ada transaksi nyata.</span>
+  </div>
+</footer>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/ui.js"></script>
+<script>
+  // customers must be logged in to reach checkout, even via direct URL.
+  // arRequireUser() redirects to login.html when there is no session.
+  const __arLoggedIn = arRequireUser('checkout.html');
+
+  const wrap = document.getElementById('checkout-wrap');
+  const items = __arLoggedIn ? arCartDetailed() : [];
+
+  if(!__arLoggedIn){
+    // navigation to login.html is already in progress; render nothing here
+  } else if(items.length === 0){
+    wrap.innerHTML += `
+      <div class="empty-state">
+        <div class="ic">🧺</div>
+        <h3>Keranjang kosong</h3>
+        <p>Tambahkan produk dulu sebelum checkout.</p>
+        <a href="shop.html" class="btn btn-primary">Belanja Sekarang</a>
+      </div>`;
+  } else {
+    const subtotal = arCartSubtotal();
+    const shippingFee = 12000;
+    const total = subtotal + shippingFee;
+
+    wrap.innerHTML += `
+      <div class="checkout-layout">
+        <form id="checkout-form" novalidate>
+          <div class="form-card">
+            <h3><span class="num">1</span> Data Penerima</h3>
+            <div class="field" data-field="name">
+              <label for="f-name">Nama Lengkap</label>
+              <input id="f-name" name="name" type="text" placeholder="Nama penerima paket">
+              <div class="field-error">Nama wajib diisi.</div>
+            </div>
+            <div class="field-row">
+              <div class="field" data-field="phone">
+                <label for="f-phone">No. WhatsApp</label>
+                <input id="f-phone" name="phone" type="tel" placeholder="08xx xxxx xxxx">
+                <div class="field-error">Nomor WhatsApp tidak valid.</div>
+              </div>
+              <div class="field" data-field="email">
+                <label for="f-email">Email</label>
+                <input id="f-email" name="email" type="email" placeholder="nama@email.com">
+                <div class="field-error">Email tidak valid.</div>
+              </div>
+            </div>
+            <div class="field" data-field="address">
+              <label for="f-address">Alamat Lengkap</label>
+              <textarea id="f-address" name="address" rows="3" placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan"></textarea>
+              <div class="field-error">Alamat wajib diisi.</div>
+            </div>
+            <div class="field-row">
+              <div class="field" data-field="city">
+                <label for="f-city">Kota / Kabupaten</label>
+                <input id="f-city" name="city" type="text" placeholder="Contoh: Sumedang">
+                <div class="field-error">Kota wajib diisi.</div>
+              </div>
+              <div class="field" data-field="postal">
+                <label for="f-postal">Kode Pos</label>
+                <input id="f-postal" name="postal" type="text" placeholder="45xxx">
+                <div class="field-error">Kode pos wajib diisi.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <h3><span class="num">2</span> Metode Pembayaran</h3>
+            <div class="pay-opts" id="pay-opts">
+              <div class="pay-opt selected" data-method="qris">
+                <div class="ic">◈</div>
+                <div><strong>QRIS</strong><span>Scan & bayar dari e-wallet / m-banking mana saja</span></div>
+              </div>
+              <div class="pay-detail">Contoh QRIS simulasi — kode QR akan tampil setelah pesanan dibuat.</div>
+
+              <div class="pay-opt" data-method="transfer">
+                <div class="ic">🏦</div>
+                <div><strong>Transfer Bank</strong><span>BCA / Mandiri / BNI a.n. AR Pashmina Studio</span></div>
+              </div>
+              <div class="pay-detail">Nomor rekening contoh: BCA 1234567890 a.n. AR Pashmina Studio.</div>
+
+              <div class="pay-opt" data-method="cod">
+                <div class="ic">💵</div>
+                <div><strong>Bayar di Tempat (COD)</strong><span>Bayar tunai saat paket tiba</span></div>
+              </div>
+              <div class="pay-detail">Tersedia untuk area tertentu. Siapkan uang pas ya.</div>
+            </div>
+            <div class="demo-note">⚠️ <span>Ini adalah simulasi pembayaran untuk keperluan demo — tidak ada transaksi uang sungguhan yang diproses.</span></div>
+          </div>
+        </form>
+
+        <div class="summary-card">
+          <h3>Ringkasan Pesanan</h3>
+          <div style="max-height:220px;overflow-y:auto;margin-bottom:14px;">
+            ${items.map(i => `
+              <div style="display:flex;justify-content:space-between;font-size:.85rem;padding:8px 0;border-bottom:1px solid var(--line);">
+                <span>${i.product.name} × ${i.qty}</span>
+                <strong>${arFormatIDR(i.lineTotal)}</strong>
+              </div>
+            `).join('')}
+          </div>
+          <div class="summary-row"><span>Subtotal</span><span>${arFormatIDR(subtotal)}</span></div>
+          <div class="summary-row"><span>Ongkos Kirim</span><span>${arFormatIDR(shippingFee)}</span></div>
+          <div class="summary-row total"><span>Total Bayar</span><span>${arFormatIDR(total)}</span></div>
+          <button class="btn btn-primary btn-block" id="place-order-btn" style="margin-top:16px;">Buat Pesanan</button>
+          <a href="cart.html" class="btn btn-outline btn-block" style="margin-top:10px;">Kembali ke Keranjang</a>
+        </div>
+      </div>
+    `;
+
+    // payment method selection
+    let selectedMethod = 'qris';
+    const payOpts = document.getElementById('pay-opts');
+    payOpts.addEventListener('click', (e) => {
+      const opt = e.target.closest('.pay-opt');
+      if(!opt) return;
+      payOpts.querySelectorAll('.pay-opt').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      selectedMethod = opt.dataset.method;
+    });
+
+    // validation + submit
+    const form = document.getElementById('checkout-form');
+
+    // convenience: prefill from the logged-in customer's saved profile
+    const __session = arGetUserSession();
+    if(__session){
+      const __profile = arGetUsers().find(u => u.id === __session.id);
+      if(__profile){
+        form.name.value = __profile.name || '';
+        form.email.value = __profile.email || '';
+        form.phone.value = __profile.phone || '';
+      }
+    }
+
+    const validators = {
+      name: v => v.trim().length >= 3,
+      phone: v => /^0[0-9]{9,13}$/.test(v.trim()),
+      email: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()),
+      address: v => v.trim().length >= 10,
+      city: v => v.trim().length >= 2,
+      postal: v => /^[0-9]{5}$/.test(v.trim()),
+    };
+
+    function validateField(name){
+      const fieldEl = form.querySelector(`[data-field="${name}"]`);
+      const input = fieldEl.querySelector('input, textarea');
+      const ok = validators[name](input.value);
+      fieldEl.classList.toggle('invalid', !ok);
+      return ok;
+    }
+
+    document.getElementById('place-order-btn').addEventListener('click', () => {
+      const names = Object.keys(validators);
+      const results = names.map(validateField);
+      const allOk = results.every(Boolean);
+      if(!allOk){
+        arToast('Cek kembali data yang belum lengkap ya.');
+        form.querySelector('.invalid input, .invalid textarea')?.focus();
+        return;
+      }
+
+      const customer = {
+        name: form.name.value.trim(),
+        phone: form.phone.value.trim(),
+        email: form.email.value.trim(),
+        address: form.address.value.trim(),
+        city: form.city.value.trim(),
+        postal: form.postal.value.trim(),
+      };
+
+      const order = arCreateOrder({
+        customer,
+        payment: selectedMethod,
+        items: items.map(i => ({ productId: i.productId, name: i.product.name, price: i.product.price, qty: i.qty })),
+        subtotal,
+        shippingFee,
+        total,
+      });
+
+      arSaveCart([]);
+      location.href = `order-success.html?id=${order.id}`;
+    });
+  }
+</script>
+</body>
+</html>
