@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pesanan Saya — AR Pashmina</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container bar">
+    <a href="index.html" class="brand">AR <small>Pashmina Studio</small></a>
+    <nav class="nav-links">
+      <a href="index.html">Beranda</a>
+      <a href="shop.html">Belanja</a>
+      <a href="shop.html?cat=Polos">Polos</a>
+      <a href="shop.html?cat=Motif">Motif</a>
+    </nav>
+    <div class="header-actions">
+      <a href="#" class="icon-btn" data-account-btn aria-label="Masuk">👤</a>
+      <a href="cart.html" class="icon-btn" aria-label="Keranjang">
+        🛍️
+        <span class="cart-count" data-cart-count style="display:none">0</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <p class="crumb"><a href="index.html">Beranda</a><span>/</span>Pesanan Saya</p>
+</div>
+
+<div class="container">
+  <h1 style="font-size:1.9rem;margin-top:14px;">Pesanan Saya</h1>
+  <p style="color:#8a8073;margin-top:-8px;">Pantau status pengiriman setiap pesananmu di sini — statusnya diperbarui otomatis begitu diproses penjual.</p>
+  <div id="orders-wrap" style="margin-top:22px;"></div>
+</div>
+
+<div class="container" id="detail-wrap"></div>
+
+<footer class="site-footer">
+  <div class="container footer-bottom" style="border-top:1px solid rgba(247,241,232,.12)">
+    <span>© 2026 AR Pashmina Studio.</span>
+    <span>Situs demo — pembayaran bersifat simulasi.</span>
+  </div>
+</footer>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/ui.js"></script>
+<script>
+  // customers must be logged in to see their own orders
+  const __arLoggedIn = arRequireUser('orders.html');
+  const listWrap = document.getElementById('orders-wrap');
+  const detailWrap = document.getElementById('detail-wrap');
+
+  const statusBadge = (s) => `<span class="badge badge-${s}">${AR_STATUS_LABEL[s] || s}</span>`;
+
+  let openId = new URLSearchParams(location.search).get('id');
+
+  function renderList(){
+    if(!__arLoggedIn) return;
+    const orders = arGetMyOrders();
+
+    if(orders.length === 0){
+      listWrap.innerHTML = `
+        <div class="empty-state">
+          <div class="ic">🧾</div>
+          <h3>Belum ada pesanan</h3>
+          <p>Yuk mulai belanja pashmina favoritmu.</p>
+          <a href="shop.html" class="btn btn-primary">Belanja Sekarang</a>
+        </div>`;
+      detailWrap.innerHTML = '';
+      return;
+    }
+
+    listWrap.innerHTML = orders.map(o => `
+      <div class="order-list-card">
+        <div>
+          <div class="id">${o.id}</div>
+          <div class="meta">${arFormatDate(o.createdAt)} · ${o.items.length} produk</div>
+        </div>
+        <div class="right">
+          <span class="amount">${arFormatIDR(o.total)}</span>
+          ${statusBadge(o.status)}
+          <button type="button" class="btn btn-outline" data-view="${o.id}" style="padding:8px 16px;font-size:.82rem;">${openId === o.id ? 'Tutup' : 'Lihat Detail'}</button>
+        </div>
+      </div>
+    `).join('');
+
+    renderDetail();
+  }
+
+  function renderDetail(){
+    if(!openId){ detailWrap.innerHTML = ''; return; }
+    const order = arGetOrder(openId);
+    if(!order || !arGetMyOrders().some(o => o.id === order.id)){ detailWrap.innerHTML = ''; return; }
+
+    detailWrap.innerHTML = `
+      <div class="success-card" style="max-width:620px;margin:0 auto 30px;">
+        <h4>Detail Pesanan ${order.id}</h4>
+        ${arOrderDetailHtml(order)}
+      </div>`;
+  }
+
+  listWrap.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-view]');
+    if(!btn) return;
+    openId = openId === btn.dataset.view ? null : btn.dataset.view;
+    renderList();
+    if(openId) detailWrap.scrollIntoView({ behavior:'smooth', block:'start' });
+  });
+
+  detailWrap.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-confirm-payment]');
+    if(!btn) return;
+    if(arConfirmCustomerPayment(btn.dataset.confirmPayment)){
+      arToast('Pembayaran dikonfirmasi. Terima kasih! 🎉');
+      renderList();
+    }
+  });
+
+  renderList();
+
+  // reflect status changes made by the admin (e.g. in another tab) live
+  window.addEventListener('storage', (e) => {
+    if(e.key === AR_KEYS.ORDERS) renderList();
+  });
+</script>
+</body>
+</html>
