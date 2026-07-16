@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Masuk Admin — AR Pashmina</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body class="admin-body">
+
+<div class="admin-login-wrap">
+  <div class="admin-login-card">
+    <a href="../index.html" class="brand">AR <small>Pashmina Studio</small></a>
+    <p class="sub">Masuk ke Admin Panel</p>
+
+    <div class="login-error" id="login-error">Username atau password salah.</div>
+
+    <form id="login-form">
+      <div class="field">
+        <label for="f-user">Username</label>
+        <input id="f-user" type="text" placeholder="admin" autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="f-pass">Password</label>
+        <input id="f-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Masuk</button>
+    </form>
+
+    <div class="demo-creds">
+      Kredensial demo — Username: <strong>admin</strong> · Password: <strong>ar12345</strong>
+    </div>
+    <p style="text-align:center;margin-top:18px;"><a href="../index.html" style="font-size:.85rem;color:#8a8073;">← Kembali ke situs utama</a></p>
+  </div>
+</div>
+
+<script src="../assets/js/data.js"></script>
+<script>
+  // if already logged in, go straight to dashboard
+  if(arGet(AR_KEYS.ADMIN_SESSION, false)){
+    location.href = 'dashboard.html';
+  }
+
+  const ADMIN_USER = 'admin';
+  const ADMIN_PASS = 'ar12345';
+
+  document.getElementById('login-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const user = document.getElementById('f-user').value.trim();
+    const pass = document.getElementById('f-pass').value;
+    const errorBox = document.getElementById('login-error');
+
+    if(user === ADMIN_USER && pass === ADMIN_PASS){
+      arSet(AR_KEYS.ADMIN_SESSION, { user, loginAt: new Date().toISOString() });
+      location.href = 'dashboard.html';
+    } else {
+      errorBox.style.display = 'block';
+    }
+  });
+</script>
+</body>
+</html>

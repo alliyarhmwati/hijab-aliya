@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Admin AR Pashmina</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body class="admin-body">
+
+<div class="admin-shell">
+  <aside class="admin-side">
+    <div class="admin-brand">AR <small>ADMIN</small></div>
+    <nav class="admin-nav" id="admin-nav"></nav>
+    <div class="spacer"></div>
+    <a href="#" class="logout" id="admin-logout">⎋ Keluar</a>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <button class="icon-btn mobile-only" id="admin-toggle" style="display:none">☰</button>
+      <div>
+        <h1>Dashboard</h1>
+        <div class="sub" id="welcome-msg">Ringkasan performa toko AR Pashmina.</div>
+      </div>
+      <a href="../index.html" target="_blank" class="btn btn-outline btn-sm">Lihat Situs →</a>
+    </div>
+
+    <div class="stat-grid" id="stat-grid"></div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Pesanan Terbaru</h3>
+        <a href="orders.html" class="btn btn-outline btn-sm">Lihat Semua</a>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr><th>No. Pesanan</th><th>Pelanggan</th><th>Tanggal</th><th>Total</th><th>Status</th></tr>
+          </thead>
+          <tbody id="recent-orders-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Stok Menipis</h3>
+        <a href="products.html" class="btn btn-outline btn-sm">Kelola Produk</a>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead><tr><th>Produk</th><th>Kategori</th><th>Harga</th><th>Stok</th></tr></thead>
+          <tbody id="low-stock-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/admin.js"></script>
+<script>
+  arRequireAdmin();
+  arRenderAdminSidebar('dashboard');
+
+  const session = arGet(AR_KEYS.ADMIN_SESSION, {});
+  document.getElementById('welcome-msg').textContent = `Selamat datang kembali, ${session.user || 'admin'}.`;
+
+  const orders = arGetOrders();
+  const products = arGetProducts();
+
+  const totalRevenue = orders.filter(o => o.status !== 'cancelled').reduce((s,o) => s + o.total, 0);
+  const pendingCount = orders.filter(o => o.status === 'pending').length;
+  const lowStock = products.filter(p => p.stock > 0 && p.stock <= 10);
+  const outOfStock = products.filter(p => p.stock === 0);
+
+  document.getElementById('stat-grid').innerHTML = `
+    <div class="stat-card">
+      <div class="lbl">Total Pendapatan</div>
+      <div class="val">${arFormatIDR(totalRevenue)}</div>
+      <div class="delta">Dari ${orders.length} pesanan</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Pesanan Baru</div>
+      <div class="val">${pendingCount}</div>
+      <div class="delta ${pendingCount ? 'down' : ''}">${pendingCount ? 'Perlu diproses' : 'Semua sudah diproses'}</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Total Produk</div>
+      <div class="val">${products.length}</div>
+      <div class="delta">${outOfStock.length} produk stok habis</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Stok Menipis</div>
+      <div class="val">${lowStock.length}</div>
+      <div class="delta ${lowStock.length ? 'down' : ''}">≤ 10 pcs tersisa</div>
+    </div>
+  `;
+
+  const statusBadge = (s) => `<span class="badge badge-${s}">${({pending:'Menunggu',paid:'Dibayar',shipped:'Dikirim',completed:'Selesai',cancelled:'Dibatalkan'})[s] || s}</span>`;
+
+  document.getElementById('recent-orders-body').innerHTML = orders.slice(0,6).map(o => `
+    <tr>
+      <td><strong>${o.id}</strong></td>
+      <td>${o.customer.name}</td>
+      <td>${arFormatDate(o.createdAt)}</td>
+      <td>${arFormatIDR(o.total)}</td>
+      <td>${statusBadge(o.status)}</td>
+    </tr>
+  `).join('') || `<tr><td colspan="5" style="text-align:center;color:#8a8073;padding:30px;">Belum ada pesanan masuk.</td></tr>`;
+
+  document.getElementById('low-stock-body').innerHTML = lowStock.concat(outOfStock).map(p => `
+    <tr>
+      <td class="row-prod"><span class="swatch" style="width:30px;height:38px;border-radius:6px;background:${p.hex}"></span><div><strong>${p.name}</strong></div></td>
+      <td>${p.category}</td>
+      <td>${arFormatIDR(p.price)}</td>
+      <td>${p.stock === 0 ? '<span class="badge badge-out">Habis</span>' : `<span class="badge badge-low">${p.stock} pcs</span>`}</td>
+    </tr>
+  `).join('') || `<tr><td colspan="4" style="text-align:center;color:#8a8073;padding:30px;">Semua stok aman.</td></tr>`;
+</script>
+</body>
+</html>

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Produk — Admin AR Pashmina</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body class="admin-body">
+
+<div class="admin-shell">
+  <aside class="admin-side">
+    <div class="admin-brand">AR <small>ADMIN</small></div>
+    <nav class="admin-nav" id="admin-nav"></nav>
+    <div class="spacer"></div>
+    <a href="#" class="logout" id="admin-logout">⎋ Keluar</a>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <div>
+        <h1>Produk</h1>
+        <div class="sub">Kelola koleksi pashmina yang tampil di situs.</div>
+      </div>
+      <button class="btn btn-primary" id="add-product-btn">+ Tambah Produk</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Semua Produk (<span id="product-count">0</span>)</h3>
+        <input id="product-search" type="search" placeholder="Cari produk…" style="padding:9px 14px;border-radius:8px;border:1px solid var(--line);">
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr><th>Produk</th><th>Kategori</th><th>Harga</th><th>Stok</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody id="product-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Add / Edit modal -->
+<div class="modal-overlay" id="product-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-title">Tambah Produk</h3>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <form id="product-form">
+      <input type="hidden" id="f-id">
+      <div class="field">
+        <label for="f-name">Nama Produk</label>
+        <input id="f-name" required placeholder="Pashmina Viscose Terracotta">
+      </div>
+      <div class="field-grid-2">
+        <div class="field">
+          <label for="f-category">Kategori</label>
+          <select id="f-category">
+            <option value="Polos">Polos</option>
+            <option value="Motif">Motif</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-color">Nama Warna</label>
+          <input id="f-color" required placeholder="Terracotta">
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-sku">SKU</label>
+        <input id="f-sku" required placeholder="AR-PV-013">
+      </div>
+      <div class="field">
+        <label for="f-image-path">Nama File Foto Produk (opsional)</label>
+        <input id="f-image-path" type="text" placeholder="misal: pashmina-navy-storm.jpg">
+        <div style="display:flex;align-items:center;gap:12px;margin-top:10px;">
+          <img id="f-image-preview" src="" alt="Pratinjau foto" style="width:64px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--line);display:none;">
+          <span id="f-image-status" style="font-size:.78rem;"></span>
+        </div>
+        <div style="font-size:.76rem;color:#8a8073;margin-top:4px;">
+          Foto <strong>harus sudah diunggah lebih dulu</strong> ke folder <code>assets/img/products/</code> pada berkas situs sebelum bisa dipakai di sini — cukup ketik nama filenya saja. Kosongkan untuk memakai blok warna otomatis.
+        </div>
+      </div>
+      <div class="field-grid-2">
+        <div class="field">
+          <label for="f-price">Harga (Rp)</label>
+          <input id="f-price" type="number" min="0" required placeholder="89000">
+        </div>
+        <div class="field">
+          <label for="f-oldprice">Harga Coret (opsional)</label>
+          <input id="f-oldprice" type="number" min="0" placeholder="105000">
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-stock">Stok</label>
+        <input id="f-stock" type="number" min="0" required placeholder="24">
+      </div>
+      <div class="field">
+        <label for="f-desc">Deskripsi</label>
+        <textarea id="f-desc" rows="3" placeholder="Deskripsi produk…"></textarea>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:.88rem;font-weight:600;margin-bottom:18px;">
+        <input type="checkbox" id="f-featured" style="width:auto;"> Tampilkan sebagai Best Seller di beranda
+      </label>
+      <div style="display:flex;gap:10px;">
+        <button type="submit" class="btn btn-primary btn-block">Simpan Produk</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/admin.js"></script>
+<script>
+  arRequireAdmin();
+  arRenderAdminSidebar('products');
+
+  const body = document.getElementById('product-body');
+  const countEl = document.getElementById('product-count');
+  const searchInput = document.getElementById('product-search');
+  let query = '';
+
+  function statusBadge(p){
+    if(p.stock === 0) return '<span class="badge badge-out">Habis</span>';
+    if(p.stock <= 10) return '<span class="badge badge-low">Menipis</span>';
+    return '<span class="badge badge-in">Tersedia</span>';
+  }
+
+  function render(){
+    const all = arGetProducts().filter(p => {
+      const q = query.trim().toLowerCase();
+      return !q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
+    });
+    countEl.textContent = all.length;
+    body.innerHTML = all.map(p => `
+      <tr>
+        <td class="row-prod">
+          <img src="${arProductImg(p)}" alt="${p.name}" onerror="this.onerror=null;this.src='${arPlaceholderImg(p.hex, p.color)}'">
+          <div><strong>${p.name}</strong><span>${p.sku}</span></div>
+        </td>
+        <td>${p.category}</td>
+        <td>${arFormatIDR(p.price)}${p.oldPrice ? `<br><span style="text-decoration:line-through;color:#a39b8c;font-size:.8rem;">${arFormatIDR(p.oldPrice)}</span>` : ''}</td>
+        <td>${p.stock} pcs</td>
+        <td>${statusBadge(p)}</td>
+        <td style="white-space:nowrap;">
+          <button class="icon-action" data-action="edit" data-id="${p.id}" title="Edit">✎</button>
+          <button class="icon-action" data-action="delete" data-id="${p.id}" title="Hapus">🗑</button>
+        </td>
+      </tr>
+    `).join('') || `<tr><td colspan="6" style="text-align:center;color:#8a8073;padding:30px;">Tidak ada produk ditemukan.</td></tr>`;
+  }
+
+  searchInput.addEventListener('input', (e) => { query = e.target.value; render(); });
+
+  // --- Modal ---
+  const modal = document.getElementById('product-modal');
+  const form = document.getElementById('product-form');
+  const modalTitle = document.getElementById('modal-title');
+
+  const IMG_FOLDER = 'assets/img/products/';
+
+  function buildImagePath(filename){
+    let f = String(filename || '').trim();
+    if(!f) return null;
+    f = f.replace(/^.*[\\/]/, ''); // ignore any folder the admin might paste in; only the filename matters
+    return IMG_FOLDER + f;
+  }
+  function filenameFromPath(path){
+    if(!path) return '';
+    return path.startsWith(IMG_FOLDER) ? path.slice(IMG_FOLDER.length) : path;
+  }
+
+  function updateImagePreview(){
+    const input = document.getElementById('f-image-path');
+    const preview = document.getElementById('f-image-preview');
+    const status = document.getElementById('f-image-status');
+    const path = buildImagePath(input.value);
+
+    if(!path){
+      preview.style.display = 'none';
+      status.textContent = '';
+      return;
+    }
+    const resolved = arResolveAssetPath(path);
+    status.textContent = 'Memeriksa...';
+    status.style.color = '#8a8073';
+    preview.onload = () => {
+      preview.style.display = 'block';
+      status.innerHTML = '✓ Foto ditemukan';
+      status.style.color = 'var(--sage)';
+    };
+    preview.onerror = () => {
+      preview.style.display = 'none';
+      status.innerHTML = `✕ Tidak ditemukan. Sistem mencari file persis di lokasi ini (relatif dari berkas situsmu):<br><code style="word-break:break-all;">${resolved}</code><br>Pastikan file dengan nama &amp; huruf besar/kecil yang <strong>persis sama</strong> ada di folder <code>assets/img/products/</code>.`;
+      status.style.color = 'var(--clay)';
+    };
+    preview.src = resolved;
+  }
+  document.getElementById('f-image-path').addEventListener('input', updateImagePreview);
+
+  function openModal(product){
+    modalTitle.textContent = product ? 'Edit Produk' : 'Tambah Produk';
+    document.getElementById('f-id').value = product ? product.id : '';
+    document.getElementById('f-name').value = product ? product.name : '';
+    document.getElementById('f-category').value = product ? product.category : 'Polos';
+    document.getElementById('f-color').value = product ? product.color : '';
+    document.getElementById('f-image-path').value = filenameFromPath(product ? product.image : '');
+    updateImagePreview();
+    document.getElementById('f-sku').value = product ? product.sku : '';
+    document.getElementById('f-price').value = product ? product.price : '';
+    document.getElementById('f-oldprice').value = product && product.oldPrice ? product.oldPrice : '';
+    document.getElementById('f-stock').value = product ? product.stock : '';
+    document.getElementById('f-desc').value = product ? product.desc : '';
+    document.getElementById('f-featured').checked = product ? !!product.featured : false;
+    modal.classList.add('open');
+  }
+  function closeModal(){ modal.classList.remove('open'); }
+
+  document.getElementById('add-product-btn').addEventListener('click', () => openModal(null));
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
+
+  function checkImageExists(path){
+    return new Promise((resolve) => {
+      if(!path){ resolve(true); return; }
+      const tester = new Image();
+      tester.onload = () => resolve(true);
+      tester.onerror = () => resolve(false);
+      tester.src = arResolveAssetPath(path);
+    });
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const imagePath = buildImagePath(document.getElementById('f-image-path').value);
+
+    if(imagePath){
+      if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = 'Memeriksa foto...'; }
+      const exists = await checkImageExists(imagePath);
+      if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = 'Simpan Produk'; }
+      if(!exists){
+        const resolved = arResolveAssetPath(imagePath);
+        const status = document.getElementById('f-image-status');
+        status.innerHTML = `✕ Tidak ditemukan. Sistem mencari file persis di lokasi ini (relatif dari berkas situsmu):<br><code style="word-break:break-all;">${resolved}</code><br>Pastikan file dengan nama &amp; huruf besar/kecil yang <strong>persis sama</strong> ada di folder <code>assets/img/products/</code>.`;
+        status.style.color = 'var(--clay)';
+        alert('Produk belum bisa disimpan dengan foto ini.\n\nSistem mencoba memuat:\n' + resolved + '\n\nFile tersebut belum ditemukan. Periksa: (1) nama file & ekstensinya persis sama termasuk huruf besar/kecil, (2) filenya benar-benar ada di folder assets/img/products/ pada berkas situs yang sedang kamu buka. Atau kosongkan field foto untuk memakai blok warna otomatis.');
+        return;
+      }
+    }
+
+    const existingId = document.getElementById('f-id').value;
+    const id = existingId || arNextProductId();
+    const existingProduct = existingId ? arGetProduct(existingId) : null;
+    const colorName = document.getElementById('f-color').value.trim();
+    const product = {
+      id,
+      name: document.getElementById('f-name').value.trim(),
+      category: document.getElementById('f-category').value,
+      color: colorName,
+      hex: existingProduct ? existingProduct.hex : arAutoHex(colorName || id),
+      image: imagePath,
+      sku: document.getElementById('f-sku').value.trim(),
+      price: parseInt(document.getElementById('f-price').value) || 0,
+      oldPrice: document.getElementById('f-oldprice').value ? parseInt(document.getElementById('f-oldprice').value) : null,
+      stock: parseInt(document.getElementById('f-stock').value) || 0,
+      desc: document.getElementById('f-desc').value.trim(),
+      featured: document.getElementById('f-featured').checked,
+    };
+    arUpsertProduct(product);
+    closeModal();
+    render();
+    arToast('Produk berhasil disimpan');
+  });
+
+  body.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if(!btn) return;
+    const id = btn.dataset.id;
+    if(btn.dataset.action === 'edit'){
+      openModal(arGetProduct(id));
+    } else if(btn.dataset.action === 'delete'){
+      if(confirm('Hapus produk ini? Tindakan tidak bisa dibatalkan.')){
+        arDeleteProduct(id);
+        render();
+        arToast('Produk dihapus');
+      }
+    }
+  });
+
+  render();
+</script>
+</body>
+</html>

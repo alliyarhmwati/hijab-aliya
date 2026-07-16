@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pesanan — Admin AR Pashmina</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body class="admin-body">
+
+<div class="admin-shell">
+  <aside class="admin-side">
+    <div class="admin-brand">AR <small>ADMIN</small></div>
+    <nav class="admin-nav" id="admin-nav"></nav>
+    <div class="spacer"></div>
+    <a href="#" class="logout" id="admin-logout">⎋ Keluar</a>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <div>
+        <h1>Pesanan</h1>
+        <div class="sub">Pantau dan perbarui status pesanan pelanggan.</div>
+      </div>
+    </div>
+
+    <div class="pill-row" id="status-filter">
+      <button class="pill active" data-status="all">Semua</button>
+      <button class="pill" data-status="pending">Menunggu</button>
+      <button class="pill" data-status="paid">Dibayar</button>
+      <button class="pill" data-status="shipped">Dikirim</button>
+      <button class="pill" data-status="completed">Selesai</button>
+      <button class="pill" data-status="cancelled">Dibatalkan</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Daftar Pesanan (<span id="order-count">0</span>)</h3>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr><th>No. Pesanan</th><th>Pelanggan</th><th>Tanggal</th><th>Item</th><th>Total</th><th>Pembayaran</th><th>Status</th></tr>
+          </thead>
+          <tbody id="order-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="order-modal">
+  <div class="modal" id="order-modal-content"></div>
+</div>
+
+<script src="../assets/js/data.js"></script>
+<script src="../assets/js/admin.js"></script>
+<script>
+  arRequireAdmin();
+  arRenderAdminSidebar('orders');
+
+  const body = document.getElementById('order-body');
+  const countEl = document.getElementById('order-count');
+  const filterRow = document.getElementById('status-filter');
+  const paymentLabel = { qris:'QRIS', transfer:'Transfer Bank', cod:'COD' };
+  const statusLabel = { pending:'Menunggu', paid:'Dibayar', shipped:'Dikirim', completed:'Selesai', cancelled:'Dibatalkan' };
+  let activeStatus = 'all';
+
+  function statusBadge(s){ return `<span class="badge badge-${s}">${statusLabel[s] || s}</span>`; }
+
+  function render(){
+    const all = arGetOrders().filter(o => activeStatus === 'all' || o.status === activeStatus);
+    countEl.textContent = all.length;
+    body.innerHTML = all.map(o => `
+      <tr>
+        <td><strong style="cursor:pointer;color:var(--clay);" data-action="view" data-id="${o.id}">${o.id}</strong></td>
+        <td>${o.customer.name}<br><span style="font-size:.78rem;color:#8a8073;">${o.customer.phone}</span></td>
+        <td>${arFormatDate(o.createdAt)}</td>
+        <td>${o.items.reduce((s,i) => s + i.qty, 0)} pcs</td>
+        <td>${arFormatIDR(o.total)}</td>
+        <td>${paymentLabel[o.payment] || o.payment}</td>
+        <td>
+          <select class="select-status" data-id="${o.id}">
+            ${arGetStepConfig(o).order.concat('cancelled').map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${statusLabel[s]}${s === 'paid' && o.payment === 'cod' ? ' (COD)' : ''}</option>`).join('')}
+          </select>
+        </td>
+      </tr>
+    `).join('') || `<tr><td colspan="7" style="text-align:center;color:#8a8073;padding:30px;">Belum ada pesanan pada status ini.</td></tr>`;
+  }
+
+  filterRow.addEventListener('click', (e) => {
+    const btn = e.target.closest('.pill');
+    if(!btn) return;
+    filterRow.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    activeStatus = btn.dataset.status;
+    render();
+  });
+
+  body.addEventListener('change', (e) => {
+    if(e.target.classList.contains('select-status')){
+      arUpdateOrderStatus(e.target.dataset.id, e.target.value);
+      arToast('Status pesanan diperbarui');
+      render();
+    }
+  });
+
+  const modal = document.getElementById('order-modal');
+  const modalContent = document.getElementById('order-modal-content');
+  body.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-action="view"]');
+    if(!el) return;
+    const o = arGetOrder(el.dataset.id);
+    if(!o) return;
+    modalContent.innerHTML = `
+      <div class="modal-head">
+        <h3>${o.id}</h3>
+        <button class="modal-close" id="order-modal-close">✕</button>
+      </div>
+      <p style="font-size:.85rem;color:#8a8073;margin-bottom:18px;">Dipesan pada ${arFormatDate(o.createdAt)}</p>
+      <div class="field-grid-2" style="margin-bottom:18px;">
+        <div>
+          <label style="font-size:.75rem;font-weight:700;color:var(--ink-plum);">PELANGGAN</label>
+          <p style="margin:6px 0 0;font-size:.9rem;">${o.customer.name}<br>${o.customer.phone}<br>${o.customer.email}</p>
+        </div>
+        <div>
+          <label style="font-size:.75rem;font-weight:700;color:var(--ink-plum);">ALAMAT KIRIM</label>
+          <p style="margin:6px 0 0;font-size:.9rem;">${o.customer.address}, ${o.customer.city} ${o.customer.postal}</p>
+        </div>
+      </div>
+      <table class="data-table" style="border:1px solid var(--line);border-radius:10px;overflow:hidden;">
+        <thead><tr><th>Produk</th><th>Qty</th><th>Subtotal</th></tr></thead>
+        <tbody>
+          ${o.items.map(i => `<tr><td>${i.name}</td><td>${i.qty}</td><td>${arFormatIDR(i.price * i.qty)}</td></tr>`).join('')}
+        </tbody>
+      </table>
+      <div style="margin-top:16px;">
+        <div class="summary-row"><span>Subtotal</span><span>${arFormatIDR(o.subtotal)}</span></div>
+        <div class="summary-row"><span>Ongkos Kirim</span><span>${arFormatIDR(o.shippingFee)}</span></div>
+        <div class="summary-row total"><span>Total</span><span>${arFormatIDR(o.total)}</span></div>
+      </div>
+    `;
+    modal.classList.add('open');
+    document.getElementById('order-modal-close').addEventListener('click', () => modal.classList.remove('open'));
+  });
+  modal.addEventListener('click', (e) => { if(e.target === modal) modal.classList.remove('open'); });
+
+  render();
+</script>
+</body>
+</html>
