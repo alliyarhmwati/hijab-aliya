@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Masuk / Daftar — AR Pashmina</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="admin-body">
+
+<div class="admin-login-wrap">
+  <div class="admin-login-card">
+    <a href="index.html" class="brand">AR <small>Pashmina Studio</small></a>
+    <p class="sub" id="auth-sub">Masuk untuk melanjutkan belanja</p>
+
+    <div class="pill-row" style="justify-content:center;margin-bottom:24px;">
+      <button type="button" class="pill active" data-tab="login">Masuk</button>
+      <button type="button" class="pill" data-tab="register">Daftar Akun</button>
+    </div>
+
+    <div class="login-error" id="auth-error"></div>
+
+    <!-- LOGIN -->
+    <form id="login-form">
+      <div class="field">
+        <label for="li-email">Email</label>
+        <input id="li-email" type="email" placeholder="nama@email.com" autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="li-pass">Password</label>
+        <input id="li-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Masuk</button>
+    </form>
+
+    <!-- REGISTER -->
+    <form id="register-form" style="display:none;">
+      <div class="field">
+        <label for="re-name">Nama Lengkap</label>
+        <input id="re-name" type="text" placeholder="Nama kamu" autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="re-email">Email</label>
+        <input id="re-email" type="email" placeholder="nama@email.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="re-phone">No. WhatsApp</label>
+        <input id="re-phone" type="tel" placeholder="08xx xxxx xxxx" autocomplete="tel">
+      </div>
+      <div class="field">
+        <label for="re-pass">Password</label>
+        <input id="re-pass" type="password" placeholder="Minimal 6 karakter" autocomplete="new-password">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Daftar & Masuk</button>
+    </form>
+
+    <p style="text-align:center;margin-top:18px;"><a href="index.html" style="font-size:.85rem;color:#8a8073;">← Kembali ke situs utama</a></p>
+  </div>
+</div>
+
+<script src="assets/js/data.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+  const redirectTo = params.get('redirect') || 'index.html';
+
+  // already logged in? go straight back
+  if(arIsUserLoggedIn()){
+    location.href = redirectTo;
+  }
+
+  const sub = document.getElementById('auth-sub');
+  const errorBox = document.getElementById('auth-error');
+  const loginForm = document.getElementById('login-form');
+  const registerForm = document.getElementById('register-form');
+  const tabs = document.querySelectorAll('[data-tab]');
+
+  function showTab(tab){
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    loginForm.style.display = tab === 'login' ? 'block' : 'none';
+    registerForm.style.display = tab === 'register' ? 'block' : 'none';
+    sub.textContent = tab === 'login' ? 'Masuk untuk melanjutkan belanja' : 'Buat akun baru dalam hitungan detik';
+    errorBox.style.display = 'none';
+  }
+  tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
+
+  function showError(msg){
+    errorBox.textContent = msg;
+    errorBox.style.display = 'block';
+  }
+
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('li-email').value.trim();
+    const pass = document.getElementById('li-pass').value;
+    if(!email || !pass){ showError('Isi email dan password terlebih dahulu.'); return; }
+
+    const result = arLoginUser(email, pass);
+    if(result.ok){
+      arToastFallback('Berhasil masuk. Selamat belanja!');
+      location.href = redirectTo;
+    } else {
+      showError(result.error);
+    }
+  });
+
+  registerForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('re-name').value.trim();
+    const email = document.getElementById('re-email').value.trim();
+    const phone = document.getElementById('re-phone').value.trim();
+    const pass = document.getElementById('re-pass').value;
+
+    if(name.length < 3){ showError('Nama minimal 3 karakter.'); return; }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ showError('Format email tidak valid.'); return; }
+    if(!/^0[0-9]{9,13}$/.test(phone)){ showError('Nomor WhatsApp tidak valid.'); return; }
+    if(pass.length < 6){ showError('Password minimal 6 karakter.'); return; }
+
+    const result = arRegisterUser({ name, email, phone, password: pass });
+    if(!result.ok){ showError(result.error); return; }
+
+    arLoginUser(email, pass);
+    location.href = redirectTo;
+  });
+
+  // ui.js isn't loaded on this page (keeps it lightweight); tiny local toast fallback
+  function arToastFallback(message){
+    let el = document.getElementById('ar-toast');
+    if(!el){
+      el = document.createElement('div');
+      el.id = 'ar-toast';
+      el.className = 'toast';
+      document.body.appendChild(el);
+    }
+    el.textContent = message;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2400);
+  }
+</script>
+</body>
+</html>
