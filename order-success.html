@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pesanan Berhasil — AR Pashmina</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container bar">
+    <a href="index.html" class="brand">AR <small>Pashmina Studio</small></a>
+    <nav class="nav-links">
+      <a href="index.html">Beranda</a>
+      <a href="shop.html">Belanja</a>
+    </nav>
+    <div class="header-actions">
+      <a href="#" class="icon-btn" data-account-btn aria-label="Masuk">👤</a>
+      <a href="cart.html" class="icon-btn" aria-label="Keranjang">
+        🛍️
+        <span class="cart-count" data-cart-count style="display:none">0</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="container" id="success-wrap"></div>
+
+<footer class="site-footer">
+  <div class="container footer-bottom" style="border-top:1px solid rgba(247,241,232,.12)">
+    <span>© 2026 AR Pashmina Studio.</span>
+    <span>Situs demo — pembayaran bersifat simulasi.</span>
+  </div>
+</footer>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/ui.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+  const orderId = params.get('id');
+  const wrap = document.getElementById('success-wrap');
+
+  function render(){
+    const order = arGetOrder(orderId);
+
+    if(!order){
+      wrap.innerHTML = `
+        <div class="empty-state">
+          <div class="ic">❓</div>
+          <h3>Pesanan tidak ditemukan</h3>
+          <p>Cek kembali link atau nomor pesanan yang kamu gunakan.</p>
+          <a href="shop.html" class="btn btn-primary">Kembali Belanja</a>
+        </div>`;
+      return;
+    }
+
+    wrap.innerHTML = `
+      <div class="success-box">
+        <div class="success-icon">✓</div>
+        <h1 style="font-size:1.8rem;">Pesanan Berhasil Dibuat!</h1>
+        <p>Terima kasih, ${order.customer.name}. Pesananmu sudah kami terima dan akan segera diproses.</p>
+
+        <div class="order-id-box">
+          <div style="font-size:.78rem;color:#8a8073;margin-bottom:6px;">Nomor Pesanan · ${arFormatDate(order.createdAt)}</div>
+          <div class="id-row">
+            <span class="id">${order.id}</span>
+            <button type="button" class="copy-btn" id="copy-id-btn" title="Salin nomor pesanan">⧉</button>
+          </div>
+        </div>
+
+        <div id="order-tracking">${arOrderDetailHtml(order)}</div>
+
+        <p style="font-size:.8rem;color:#8a8073;">Situs demo — pembayaran bersifat simulasi, tidak ada transaksi uang sungguhan.</p>
+
+        <div class="hero-cta" style="justify-content:center;">
+          <a href="orders.html" class="btn btn-primary">📦 Pesanan Saya</a>
+          <a href="shop.html" class="btn btn-outline">Belanja Lagi</a>
+        </div>
+        <p style="font-size:.8rem;color:#8a8073;margin-top:16px;">Status pengiriman di halaman ini diperbarui otomatis begitu penjual memprosesnya — tidak perlu konfirmasi manual.</p>
+      </div>
+    `;
+
+    document.getElementById('copy-id-btn').addEventListener('click', () => {
+      arCopyToClipboard(order.id, () => arToast('Nomor pesanan disalin'));
+    });
+
+    const confirmBtn = wrap.querySelector('[data-confirm-payment]');
+    if(confirmBtn){
+      confirmBtn.addEventListener('click', () => {
+        if(arConfirmCustomerPayment(confirmBtn.dataset.confirmPayment)){
+          arToast('Pembayaran dikonfirmasi. Terima kasih! 🎉');
+          render();
+        }
+      });
+    }
+  }
+
+  render();
+
+  // if the seller updates this order's status in another tab (Admin Panel),
+  // reflect it here immediately without needing a manual refresh
+  window.addEventListener('storage', (e) => {
+    if(e.key === AR_KEYS.ORDERS) render();
+  });
+</script>
+</body>
+</html>
