@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detail Produk — AR Pashmina</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container bar">
+    <a href="index.html" class="brand">AR <small>Pashmina Studio</small></a>
+    <nav class="nav-links">
+      <a href="index.html">Beranda</a>
+      <a href="shop.html" class="active">Belanja</a>
+      <a href="shop.html?cat=Polos">Polos</a>
+      <a href="shop.html?cat=Motif">Motif</a>
+    </nav>
+    <div class="header-actions">
+      <button class="nav-toggle icon-btn" aria-label="Buka menu">☰</button>
+      <a href="#" class="icon-btn" data-account-btn aria-label="Masuk">👤</a>
+      <a href="cart.html" class="icon-btn" aria-label="Keranjang">
+        🛍️
+        <span class="cart-count" data-cart-count style="display:none">0</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <p class="crumb"><a href="index.html">Beranda</a><span>/</span><a href="shop.html">Belanja</a><span>/</span><span id="crumb-name">Produk</span></p>
+</div>
+
+<div class="container" id="pd-wrap"></div>
+
+<section class="section section-alt tight">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Mungkin Kamu Suka</p>
+        <h2>Warna serupa lainnya</h2>
+      </div>
+    </div>
+    <div class="grid-products" id="related-grid"></div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div>
+      <a href="index.html" class="brand" style="color:var(--ivory)">AR <small>Pashmina Studio</small></a>
+      <p style="margin-top:14px;max-width:280px;color:rgba(247,241,232,.65);font-size:.88rem;">Pashmina viscose premium untuk perempuan Indonesia yang ingin tampil tenang dan nyaman setiap hari.</p>
+    </div>
+    <div>
+      <h5>Belanja</h5>
+      <a href="shop.html">Semua Produk</a>
+      <a href="shop.html?cat=Polos">Pashmina Polos</a>
+      <a href="shop.html?cat=Motif">Pashmina Motif</a>
+      <a href="cart.html">Keranjang</a>
+    </div>
+    <div>
+      <h5>Bantuan</h5>
+      <a href="#">Cara Pemesanan</a>
+      <a href="#">Pengiriman</a>
+      <a href="#">Kebijakan Retur</a>
+      <a href="admin/login.html">Admin Panel</a>
+    </div>
+    <div>
+      <h5>Hubungi Kami</h5>
+      <a href="#">WhatsApp: 0812-3456-7890</a>
+      <a href="#">hello@arpashmina.id</a>
+      <a href="#">Instagram @ar.pashmina</a>
+    </div>
+  </div>
+  <div class="container footer-bottom">
+    <span>© 2026 AR Pashmina Studio. Semua produk dibuat dengan cinta.</span>
+    <span>Situs demo — pembayaran bersifat simulasi.</span>
+  </div>
+</footer>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/ui.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  const product = id ? arGetProduct(id) : null;
+  const wrap = document.getElementById('pd-wrap');
+
+  if(!product){
+    wrap.innerHTML = `<div class="empty-state"><div class="ic">🔍</div><h3>Produk tidak ditemukan</h3><p>Produk yang kamu cari mungkin sudah tidak tersedia.</p><a href="shop.html" class="btn btn-primary">Kembali Belanja</a></div>`;
+  } else {
+    document.title = product.name + ' — AR Pashmina';
+    document.getElementById('crumb-name').textContent = product.name;
+    const img = arProductImg(product);
+    const imgFallback = arPlaceholderImg(product.hex, product.color);
+    const stockLabel = product.stock === 0
+      ? '<span class="pd-stock low">● Stok habis</span>'
+      : product.stock <= 5
+        ? `<span class="pd-stock low">● Sisa ${product.stock} pcs — buruan!</span>`
+        : `<span class="pd-stock">● Tersedia (${product.stock} pcs)</span>`;
+    const priceHtml = product.oldPrice
+      ? `<span class="old">${arFormatIDR(product.oldPrice)}</span><span class="now">${arFormatIDR(product.price)}</span>`
+      : `<span class="now">${arFormatIDR(product.price)}</span>`;
+
+    wrap.innerHTML = `
+      <div class="pd-grid">
+        <div>
+          <div class="pd-gallery-main"><img src="${img}" alt="${product.name}" onerror="this.onerror=null;this.src='${imgFallback}'"></div>
+        </div>
+        <div class="pd-info">
+          <span class="p-cat">${product.category} · SKU ${product.sku}</span>
+          <h1>${product.name}</h1>
+          <div class="pd-price-row">${priceHtml}</div>
+          ${stockLabel}
+          <p class="pd-desc">${product.desc}</p>
+
+          <div class="pd-block">
+            <label>Warna: ${product.color}</label>
+            <div class="color-opts">
+              <div class="color-opt active"><span class="dot" style="background:${product.hex}"></span>${product.color}</div>
+            </div>
+          </div>
+
+          <div class="pd-block">
+            <label>Jumlah</label>
+            <div class="qty-row">
+              <div class="qty-stepper">
+                <button type="button" id="qty-minus" aria-label="Kurangi">−</button>
+                <input type="text" id="qty-input" value="1" inputmode="numeric" readonly>
+                <button type="button" id="qty-plus" aria-label="Tambah">+</button>
+              </div>
+              <span style="font-size:.82rem;color:#8a8073;">Stok tersedia: ${product.stock}</span>
+            </div>
+          </div>
+
+          <div class="pd-actions">
+            <button class="btn btn-primary btn-block" id="add-cart-btn" ${product.stock === 0 ? 'disabled' : ''}>
+              ${product.stock === 0 ? 'Stok Habis' : 'Tambah ke Keranjang'}
+            </button>
+            <a href="cart.html" class="btn btn-outline">Lihat Keranjang</a>
+          </div>
+
+          <div class="trust-row">
+            <div>🚚 Kirim ke seluruh Indonesia</div>
+            <div>🔄 Retur 3 hari</div>
+            <div>✅ Bahan 100% viscose</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const qtyInput = document.getElementById('qty-input');
+    document.getElementById('qty-minus').addEventListener('click', () => {
+      qtyInput.value = Math.max(1, parseInt(qtyInput.value) - 1);
+    });
+    document.getElementById('qty-plus').addEventListener('click', () => {
+      qtyInput.value = Math.min(product.stock, parseInt(qtyInput.value) + 1);
+    });
+    const addBtn = document.getElementById('add-cart-btn');
+    if(addBtn){
+      addBtn.addEventListener('click', () => {
+        arAddToCart(product.id, parseInt(qtyInput.value));
+        arToast(`${product.name} ditambahkan ke keranjang`);
+      });
+    }
+
+    // related products: same category, excluding current
+    const related = arGetProducts().filter(p => p.category === product.category && p.id !== product.id && p.image).slice(0,4);
+    document.getElementById('related-grid').innerHTML = related.map(p => {
+      const rImg = arProductImg(p);
+      const rImgFallback = arPlaceholderImg(p.hex, p.color);
+      const rBadge = p.stock === 0 ? '<span class="p-badge out">Habis</span>' : '';
+      return `
+      <a class="p-card" href="product.html?id=${p.id}">
+        <div class="p-thumb"><img src="${rImg}" alt="${p.name}" loading="lazy" onerror="this.onerror=null;this.src='${rImgFallback}'">${rBadge}<span class="p-quick">→</span></div>
+        <div class="p-body">
+          <span class="p-cat">${p.category}</span>
+          <span class="p-name">${p.name}</span>
+          <span class="p-price">${arFormatIDR(p.price)}</span>
+        </div>
+      </a>`;
+    }).join('');
+  }
+</script>
+</body>
+</html>
